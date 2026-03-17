@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <title>App Operario — Film PVC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -57,11 +57,11 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111}
 /* DASHBOARD */
 .hero{background:#111;border-radius:16px;padding:16px;color:white;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)}
-.hero-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:6px}
-.hero-val{font-size:42px;font-weight:800;color:white;line-height:1;letter-spacing:-1px}
-.hero-unit{font-size:20px;font-weight:500;color:rgba(255,255,255,.4)}
-.hero-sub{font-size:13px;color:rgba(255,255,255,.4);margin-top:6px}
-.hero-bar-bg{height:4px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:16px;overflow:hidden}
+.hero-lbl{font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:4px}
+.hero-val{font-size:36px;font-weight:800;color:white;line-height:1;letter-spacing:-1px}
+.hero-unit{font-size:16px;font-weight:500;color:rgba(255,255,255,.4)}
+.hero-sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px}
+.hero-bar-bg{height:3px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:10px;overflow:hidden}
 .hero-bar-fill{height:100%;background:white;border-radius:99px;transition:width .6s}
 .m2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mc{background:white;border-radius:16px;border:1px solid #EBEBEB;padding:16px}
@@ -585,8 +585,8 @@ function cargarDemo(){
   const demos = [
     {tipo:'Transp. 50mic',color:'#3B82F6',metros:120,hora:'07:15',comentario:''},
     {tipo:'Negro 80mic',color:'#374151',metros:80,hora:'08:42',comentario:'Rollo defectuoso'},
-    {tipo:'Stretch man.',color:'#F59E0B',metros:200,hora:'09:30',comentario:''},
-    {tipo:'Transp. 50mic',color:'#3B82F6',metros:150,hora:'10:55',comentario:''},
+    {tipo:'Stretch man.',color:'#F59E0B',metros:150,hora:'09:30',comentario:''},
+    {tipo:'Transp. 50mic',color:'#3B82F6',metros:100,hora:'10:55',comentario:''},
   ];
   demos.forEach((d,i)=>cortes.push({id:Date.now()+i,op:'Juan P.',tipo:d.tipo,color:d.color,metros:d.metros,comentario:d.comentario,hora:d.hora,fecha:hoy}));
   errores.push({id:Date.now()+10,op:'Juan P.',tipo:'Falla de máquina',icon:'⚙️',desc:'La máquina 2 hace ruido raro al cortar, puede ser la cuchilla.',zonas:['Máquina 2'],hora:'09:10',fecha:hoy});
