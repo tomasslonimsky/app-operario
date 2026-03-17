@@ -369,12 +369,17 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111;height:100%;he
     <div class="pane" id="pane-hist">
       <div class="scroll">
         <div class="h-stats">
-          <div class="hs"><div class="hs-n" id="h-tot">0</div><div class="hs-l">Metros</div></div>
+          <div class="hs"><div class="hs-n" id="h-tot">0</div><div class="hs-l">Metros hoy</div></div>
           <div class="hs"><div class="hs-n" id="h-cor">0</div><div class="hs-l">Cortes</div></div>
           <div class="hs"><div class="hs-n red" id="h-err">0</div><div class="hs-l">Reportes</div></div>
         </div>
         <div><div class="sec">CORTES DE HOY</div><div id="h-cortes"></div></div>
         <div><div class="sec">REPORTES DE HOY</div><div id="h-errors"></div></div>
+        <div id="h-prev"></div>
+        <div style="padding:12px 0 8px">
+          <button onclick="cerrarSesion()" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #E5E5E5;background:#fff;color:#EF4444;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Cambiar operario</button>
+          <button onclick="limpiarTodo()" style="width:100%;padding:13px;border-radius:12px;border:none;background:none;color:#CCC;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;margin-top:8px">Borrar todos los datos locales</button>
+        </div>
       </div>
     </div>
 
@@ -456,10 +461,11 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111;height:100%;he
   <div class="cfg-sheet">
     <div class="ov-handle"></div>
     <div style="font-size:17px;font-weight:800;color:#111;margin-bottom:4px">⚙ Google Sheets</div>
-    <div style="font-size:12px;color:#AAA;margin-bottom:18px">Sync automático de cortes y reportes</div>
+    <div style="font-size:12px;color:#AAA;margin-bottom:18px">Sync automático — todos los operarios comparten datos</div>
     <div class="cfg-lbl">INSTRUCCIONES</div>
     <div class="cfg-step"><b>1.</b> Abrí <a href="https://sheets.google.com" target="_blank" style="color:#111">sheets.google.com</a> y creá una planilla nueva.</div>
-    <div class="cfg-step"><b>2.</b> <b>Extensiones → Apps Script</b>. Borrá todo y pegá este código:</div>
+    <div class="cfg-step"><b>2.</b> Creá una hoja llamada <b>"Stock"</b> con 2 columnas: <b>TipoId</b> y <b>Metros</b>. Completá el stock inicial de cada film (t1, t2, t3, t4, t5, t6).</div>
+    <div class="cfg-step"><b>3.</b> <b>Extensiones → Apps Script</b>. Borrá todo y pegá este código:</div>
     <div class="cfg-code" id="cfg-code" onclick="copiarScript()">function doPost(e){
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var d=JSON.parse(e.postData.contents);
@@ -469,9 +475,41 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111;height:100%;he
     sh.appendRow(d.row);
   }
   return ContentService.createTextOutput('ok');
+}
+function doGet(e){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var r={cortes:[],errores:[],stock:{}};
+  var cs=ss.getSheetByName('Cortes');
+  if(cs&&cs.getLastRow()>1){
+    var d=cs.getDataRange().getValues();
+    for(var i=1;i&lt;d.length;i++){
+      r.cortes.push({fecha:d[i][0],hora:d[i][1],
+        op:d[i][2],tipo:d[i][3],metros:Number(d[i][4]),
+        comentario:d[i][5]||'',tipoId:d[i][6]||''});
+    }
+  }
+  var es=ss.getSheetByName('Errores');
+  if(es&&es.getLastRow()>1){
+    var d=es.getDataRange().getValues();
+    for(var i=1;i&lt;d.length;i++){
+      r.errores.push({fecha:d[i][0],hora:d[i][1],
+        op:d[i][2],tipo:d[i][3],desc:d[i][4]||'',
+        zonas:String(d[i][5]||'')});
+    }
+  }
+  var st=ss.getSheetByName('Stock');
+  if(st&&st.getLastRow()>1){
+    var d=st.getDataRange().getValues();
+    for(var i=1;i&lt;d.length;i++){
+      r.stock[String(d[i][0])]=Number(d[i][1]);
+    }
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify(r)).setMimeType(
+    ContentService.MimeType.JSON);
 }</div>
     <div style="font-size:12px;color:#3B82F6;cursor:pointer;margin-bottom:14px" onclick="copiarScript()">📋 Tocar para copiar</div>
-    <div class="cfg-step"><b>3.</b> <b>Implementar → Nueva implementación → App web</b>. Acceso: <b>"Cualquier persona"</b>. Copiá la URL.</div>
+    <div class="cfg-step"><b>4.</b> <b>Implementar → Nueva implementación → App web</b>. Acceso: <b>"Cualquier persona"</b>. Copiá la URL.</div>
     <div class="cfg-lbl">URL DEL APPS SCRIPT</div>
     <input class="cfg-input" id="cfg-url" placeholder="https://script.google.com/macros/s/..."/>
     <button class="cfg-save" onclick="guardarCfg()">💾 Guardar y conectar</button>
@@ -492,7 +530,8 @@ const TIPOS=[
   {id:'t5',name:'Stretch man.', color:'#F59E0B'},
   {id:'t6',name:'Stretch maq.', color:'#EF4444'},
 ];
-const STOCK={t1:300,t2:200,t3:150,t4:250,t5:180,t6:160};
+let STOCK={t1:300,t2:200,t3:150,t4:250,t5:180,t6:160};
+const STOCK_DEFAULT={...{t1:300,t2:200,t3:150,t4:250,t5:180,t6:160}};
 const ERR_TIPOS=[
   {id:'e1',icon:'⚙️',name:'Falla de máquina',    sub:'La máquina no funciona correctamente'},
   {id:'e2',icon:'📦',name:'Material defectuoso', sub:'Rollo o insumo en mal estado'},
@@ -507,6 +546,25 @@ const CHIPS=['Rollo defectuoso','Merma','Corte especial','Cambio turno','Sin nov
 let op='',tid=null,ms='',etid=null,ezonas=[],cortes=[],errores=[];
 let shCfg=JSON.parse(localStorage.getItem('filmcfg')||'null')||{url:''};
 let lastCorte=null,toastTimer=null;
+let syncQueue=JSON.parse(localStorage.getItem('filmsyncq')||'[]');
+
+// PERSISTENCIA LOCAL
+function saveLocal(){
+  localStorage.setItem('filmcortes',JSON.stringify(cortes));
+  localStorage.setItem('filmerrores',JSON.stringify(errores));
+  localStorage.setItem('filmop',op);
+}
+function loadLocal(){
+  try{cortes=JSON.parse(localStorage.getItem('filmcortes')||'[]');}catch(e){cortes=[];}
+  try{errores=JSON.parse(localStorage.getItem('filmerrores')||'[]');}catch(e){errores=[];}
+  op=localStorage.getItem('filmop')||'';
+}
+loadLocal();
+
+// AVISO AL CERRAR CON DATOS PENDIENTES
+window.addEventListener('beforeunload',function(e){
+  if(syncQueue.length>0){e.preventDefault();e.returnValue='';}
+});
 
 // INIT
 (function(){
@@ -546,8 +604,14 @@ let lastCorte=null,toastTimer=null;
     document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeOv(id);});
   });
 
-  setSyncUI(shCfg.url?'ok':'',shCfg.url?'Conectado a Google Sheets ✓':'Sin Google Sheets — tocar ⚙');
+  setSyncUI(shCfg.url?(syncQueue.length>0?'busy':'ok'):'',shCfg.url?(syncQueue.length>0?syncQueue.length+' pendiente(s) — reintentando...':'Conectado a Google Sheets ✓'):'Sin Google Sheets — tocar ⚙');
   document.querySelectorAll('.pane').forEach(p=>{if(!p.classList.contains('on'))p.style.display='none';});
+
+  // Auto-login si ya hay operario guardado
+  if(op){
+    document.getElementById('lg-sel').value=op;
+    entrar();
+  }
 })();
 
 // LOGIN
@@ -555,11 +619,15 @@ function onSelOp(sel){op=sel.value;document.getElementById('lg-btn').disabled=!o
 
 function entrar(){
   if(!op)return;
+  saveLocal();
   document.getElementById('hdr-name').textContent=op;
   document.getElementById('sh-av').textContent=op.split(' ').map(w=>w[0]).join('');
   const d=new Date();
   document.getElementById('hdr-fecha').textContent=d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'}).replace(/^\w/,c=>c.toUpperCase());
   updDash();go('s-shell');goPane('dash');
+  // Flush pending sync queue and fetch latest data on login
+  setTimeout(flushQueue,1000);
+  setTimeout(fetchData,1500);
 }
 
 // GO
@@ -587,16 +655,18 @@ function irDash(){updDash();go('s-shell');goPane('dash');}
 function nuevoCorte(){resetCorte();go('s-shell');goPane('corte');}
 function nuevoError(){resetError();go('s-shell');goPane('error');}
 
-// DASHBOARD
+// DASHBOARD — Stock usa TODOS los cortes (compartido), Mi Día filtra por operario
 function stockR(tid){return Math.max(0,(STOCK[tid]||0)-cortes.filter(r=>r.tipoId===tid).reduce((s,r)=>s+r.metros,0));}
 
 function updDash(){
   const hoy=new Date().toLocaleDateString('es-AR');
-  const hc=cortes.filter(r=>r.fecha===hoy);
-  const he=errores.filter(r=>r.fecha===hoy);
+  // Mi día = solo mis cortes de hoy
+  const hc=cortes.filter(r=>r.fecha===hoy&&r.op===op);
+  const he=errores.filter(r=>r.fecha===hoy&&r.op===op);
   const tot=hc.reduce((s,r)=>s+r.metros,0),cor=hc.length;
   const prom=cor?Math.round(tot/cor):0;
 
+  // Stock = TODOS los operarios (compartido)
   const stTot=TIPOS.reduce((s,t)=>s+stockR(t.id),0);
   const stIni=Object.values(STOCK).reduce((a,b)=>a+b,0);
   const pct=stIni>0?Math.round(stTot/stIni*100):100;
@@ -641,15 +711,33 @@ function updDash(){
   document.getElementById('h-cortes').innerHTML=hc.length?hc.slice().reverse().map((r,i)=>`
     <div class="reg-card"><span class="reg-dot" style="background:${r.color}"></span>
     <div style="flex:1;min-width:0"><div class="reg-tipo">${r.tipo}</div><div class="reg-meta">${r.hora}${r.comentario?' · '+r.comentario:''}</div></div>
-    <div style="text-align:right"><div class="reg-m">${r.metros} m</div>${i===0?`<button class="undo-btn" onclick="undoById(${r.id})">Deshacer</button>`:''}</div>
+    <div style="text-align:right"><div class="reg-m">${r.metros} m</div>${i===0&&r._src==='local'?`<button class="undo-btn" onclick="undoById(${r.id})">Deshacer</button>`:''}</div>
     </div>`).join(''):'<div class="empty">Sin cortes hoy</div>';
 
-  document.getElementById('h-errors').innerHTML=he.length?he.slice().reverse().map(r=>`
+  document.getElementById('h-errors').innerHTML=he.length?he.slice().reverse().map((r,i)=>`
     <div class="rep-card">
       <div class="rep-top"><div class="rep-icon">${r.icon}</div><div class="rep-title">${r.tipo}</div><div class="rep-hora">${r.hora}</div></div>
       <div class="rep-desc">${r.desc}</div>
       <div class="rep-tags"><span class="rep-tag">${r.op}</span>${r.zonas.map(z=>`<span class="rep-tag">${z}</span>`).join('')}</div>
+      ${i===0&&r._src==='local'?`<button class="undo-btn" style="margin-top:6px" onclick="undoErrById(${r.id})">Deshacer</button>`:''}
     </div>`).join(''):'<div class="empty">Sin reportes hoy</div>';
+
+  // HISTORIAL DÍAS ANTERIORES (mi operario)
+  const myCortes=cortes.filter(r=>r.op===op);
+  const myErrors=errores.filter(r=>r.op===op);
+  const prevDates=[...new Set([...myCortes,...myErrors].map(r=>r.fecha))].filter(f=>f!==hoy).sort().reverse().slice(0,7);
+  const prevEl=document.getElementById('h-prev');
+  if(prevDates.length){
+    prevEl.innerHTML=prevDates.map(fecha=>{
+      const pc=myCortes.filter(r=>r.fecha===fecha);
+      const pe=myErrors.filter(r=>r.fecha===fecha);
+      const ptot=pc.reduce((s,r)=>s+r.metros,0);
+      return `<div style="margin-top:8px"><div class="sec">${fecha} — ${ptot} m · ${pc.length} corte(s) · ${pe.length} reporte(s)</div>
+        ${pc.map(r=>`<div class="reg-card"><span class="reg-dot" style="background:${r.color}"></span><div style="flex:1;min-width:0"><div class="reg-tipo">${r.tipo}</div><div class="reg-meta">${r.hora}${r.comentario?' · '+r.comentario:''}</div></div><div class="reg-m">${r.metros} m</div></div>`).join('')}
+        ${pe.map(r=>`<div class="rep-card"><div class="rep-top"><div class="rep-icon">${r.icon}</div><div class="rep-title">${r.tipo}</div><div class="rep-hora">${r.hora}</div></div><div class="rep-desc">${r.desc}</div></div>`).join('')}
+      </div>`;
+    }).join('');
+  }else{prevEl.innerHTML='';}
 }
 
 // CORTE
@@ -676,10 +764,11 @@ function confirmarCorte(){
   const r={id:Date.now(),op,tipoId:tid,tipo:t.name,color:t.color,metros:getM(),
     comentario:document.getElementById('c-comment').value.trim(),
     hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
-    fecha:now.toLocaleDateString('es-AR')};
-  cortes.push(r);lastCorte=r;
-  shPost({sheet:'Cortes',action:'append',headers:['Fecha','Hora','Operario','Tipo','Metros','Comentario'],row:[r.fecha,r.hora,r.op,r.tipo,r.metros,r.comentario]});
-  const hc=cortes.filter(x=>x.fecha===r.fecha),tot=hc.reduce((s,x)=>s+x.metros,0);
+    fecha:now.toLocaleDateString('es-AR'),_src:'local'};
+  cortes.push(r);lastCorte=r;saveLocal();
+  shPost({sheet:'Cortes',action:'append',headers:['Fecha','Hora','Operario','Tipo','Metros','Comentario','TipoId'],row:[r.fecha,r.hora,r.op,r.tipo,r.metros,r.comentario,r.tipoId]});
+  setTimeout(fetchData,2000);
+  const hc=cortes.filter(x=>x.fecha===r.fecha&&x.op===op),tot=hc.reduce((s,x)=>s+x.metros,0);
   document.getElementById('okc-m').innerHTML=r.metros+' <span>m</span>';
   document.getElementById('okc-pill').textContent='Hoy: '+tot+' m · '+hc.length+' corte(s)';
   document.getElementById('okc-sum').innerHTML=`<div class="ok-row"><span class="k">Film</span><span class="v">${r.tipo}</span></div><div class="ok-row"><span class="k">Metros</span><span class="v">${r.metros} m</span></div><div class="ok-row"><span class="k">Hora</span><span class="v">${r.hora}</span></div>${r.comentario?`<div class="ok-row"><span class="k">Nota</span><span class="v">${r.comentario}</span></div>`:''}`;
@@ -719,9 +808,10 @@ function chkErr(){document.getElementById('err-btn').disabled=!etid;}
 function regError(){
   const t=ERR_TIPOS.find(x=>x.id===etid),now=new Date();
   const r={id:Date.now(),op,tipo:t.name,icon:t.icon,desc:document.getElementById('e-desc').value.trim(),zonas:ezonas.slice(),
-    hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),fecha:now.toLocaleDateString('es-AR')};
-  errores.push(r);
+    hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),fecha:now.toLocaleDateString('es-AR'),_src:'local'};
+  errores.push(r);saveLocal();
   shPost({sheet:'Errores',action:'append',headers:['Fecha','Hora','Operario','Tipo','Descripción','Zonas'],row:[r.fecha,r.hora,r.op,r.tipo,r.desc,r.zonas.join(', ')]});
+  setTimeout(fetchData,2000);
   document.getElementById('oke-pill').textContent=t.name+' · '+r.hora;
   document.getElementById('oke-sum').innerHTML=`<div class="ok-row"><span class="k">Operario</span><span class="v">${r.op}</span></div><div class="ok-row"><span class="k">Tipo</span><span class="v">${r.icon} ${r.tipo}</span></div><div class="ok-row"><span class="k">Descripción</span><span class="v" style="max-width:180px">${r.desc}</span></div>${r.zonas.length?`<div class="ok-row"><span class="k">Zona</span><span class="v">${r.zonas.join(', ')}</span></div>`:''}<div class="ok-row"><span class="k">Hora</span><span class="v">${r.hora}</span></div>`;
   go('s-ok-e');
@@ -736,20 +826,105 @@ function resetError(){
 }
 
 // UNDO
-function undoById(id){cortes=cortes.filter(r=>r.id!==id);if(lastCorte&&lastCorte.id===id)lastCorte=null;updDash();}
+function undoById(id){cortes=cortes.filter(r=>r.id!==id);if(lastCorte&&lastCorte.id===id)lastCorte=null;saveLocal();updDash();}
+function undoErrById(id){errores=errores.filter(r=>r.id!==id);saveLocal();updDash();}
 function undoLast(){if(!lastCorte)return;undoById(lastCorte.id);clearTimeout(toastTimer);document.getElementById('toast').classList.remove('show');}
 
 // OVERLAY
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){document.getElementById(id).classList.remove('open');}
 function openCfg(){document.getElementById('cfg-url').value=shCfg.url||'';openOv('ov-cfg');}
-function guardarCfg(){shCfg.url=document.getElementById('cfg-url').value.trim();localStorage.setItem('filmcfg',JSON.stringify(shCfg));closeOv('ov-cfg');setSyncUI('ok','Conectado a Google Sheets ✓');}
+function guardarCfg(){shCfg.url=document.getElementById('cfg-url').value.trim();localStorage.setItem('filmcfg',JSON.stringify(shCfg));closeOv('ov-cfg');setSyncUI('ok','Conectado a Google Sheets ✓');setTimeout(flushQueue,500);}
 function borrarCfg(){shCfg={url:''};localStorage.setItem('filmcfg',JSON.stringify(shCfg));document.getElementById('cfg-url').value='';closeOv('ov-cfg');setSyncUI('','Sin Google Sheets — tocar ⚙');}
 function copiarScript(){navigator.clipboard?.writeText(document.getElementById('cfg-code').innerText).then(()=>{document.getElementById('cfg-code').style.borderColor='#22C55E';setTimeout(()=>document.getElementById('cfg-code').style.borderColor='transparent',1500)});}
 
 // SYNC
 function setSyncUI(state,msg){document.getElementById('sdot').className='sdot'+(state?' '+state:'');document.getElementById('slbl').textContent=msg;}
-async function shPost(payload){if(!shCfg.url)return;try{await fetch(shCfg.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});setSyncUI('ok','Sincronizado ✓');}catch(e){setSyncUI('err','Error al sincronizar');}}
+function saveSyncQueue(){localStorage.setItem('filmsyncq',JSON.stringify(syncQueue));}
+async function shPost(payload){
+  if(!shCfg.url){syncQueue.push(payload);saveSyncQueue();return;}
+  try{
+    setSyncUI('busy','Sincronizando...');
+    await fetch(shCfg.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    setSyncUI('ok','Sincronizado ✓');
+  }catch(e){
+    syncQueue.push(payload);saveSyncQueue();
+    setSyncUI('err','Error — '+syncQueue.length+' pendiente(s)');
+  }
+}
+async function flushQueue(){
+  if(!shCfg.url||syncQueue.length===0)return;
+  setSyncUI('busy','Enviando '+syncQueue.length+' pendiente(s)...');
+  const pending=[...syncQueue];syncQueue=[];saveSyncQueue();
+  for(const p of pending){
+    try{await fetch(shCfg.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});}
+    catch(e){syncQueue.push(p);}
+  }
+  saveSyncQueue();
+  if(syncQueue.length>0)setSyncUI('err','Error — '+syncQueue.length+' pendiente(s)');
+  else setSyncUI('ok','Sincronizado ✓');
+}
+// Reintento automático cada 60s
+setInterval(flushQueue,60000);
+
+// FETCH DATA FROM SHEETS (lectura compartida)
+let fetchBusy=false;
+function tipoFromName(name){return TIPOS.find(t=>t.name===name)||null;}
+
+async function fetchData(){
+  if(!shCfg.url||fetchBusy)return;
+  fetchBusy=true;
+  try{
+    setSyncUI('busy','Actualizando datos...');
+    const resp=await fetch(shCfg.url);
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+
+    // Stock desde Sheets (si tiene hoja Stock)
+    if(data.stock&&Object.keys(data.stock).length>0){
+      STOCK={...STOCK_DEFAULT};
+      for(const[k,v]of Object.entries(data.stock)){STOCK[k]=Number(v);}
+    }
+
+    // Cortes desde Sheets — enriquecer con tipoId y color
+    if(data.cortes){
+      const sheetCortes=data.cortes.map((r,i)=>{
+        const t=r.tipoId?TIPOS.find(x=>x.id===r.tipoId):tipoFromName(r.tipo);
+        return{id:i+1,op:String(r.op||''),tipoId:t?t.id:'',tipo:String(r.tipo||''),
+          color:t?t.color:'#999',metros:Number(r.metros)||0,
+          comentario:String(r.comentario||''),hora:String(r.hora||''),
+          fecha:String(r.fecha||''),_src:'sheet'};
+      });
+      // Agregar cortes locales pendientes que no estén en Sheets
+      const localPending=cortes.filter(r=>r._src==='local');
+      cortes=[...sheetCortes,...localPending];
+      saveLocal();
+    }
+
+    // Errores desde Sheets
+    if(data.errores){
+      const sheetErr=data.errores.map((r,i)=>{
+        const zonas=typeof r.zonas==='string'?r.zonas.split(',').map(z=>z.trim()).filter(Boolean):[];
+        const et=ERR_TIPOS.find(x=>x.name===r.tipo);
+        return{id:i+1,op:String(r.op||''),tipo:String(r.tipo||''),
+          icon:et?et.icon:'⚠️',desc:String(r.desc||''),zonas,
+          hora:String(r.hora||''),fecha:String(r.fecha||''),_src:'sheet'};
+      });
+      const localPendingE=errores.filter(r=>r._src==='local');
+      errores=[...sheetErr,...localPendingE];
+      saveLocal();
+    }
+
+    setSyncUI('ok','Sincronizado ✓ · '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+    updDash();
+  }catch(e){
+    console.warn('fetchData error:',e);
+    setSyncUI('err','Error al leer datos');
+  }finally{fetchBusy=false;}
+}
+
+// Auto-refresh cada 30 segundos
+setInterval(fetchData,30000);
 
 // DEMO
 function cargarDemo(){
@@ -759,9 +934,27 @@ function cargarDemo(){
    {tipoId:'t4',tipo:'Negro 80mic',  color:'#374151',metros:80, hora:'08:42',comentario:'Rollo defectuoso'},
    {tipoId:'t5',tipo:'Stretch man.', color:'#F59E0B',metros:150,hora:'09:30',comentario:''},
    {tipoId:'t1',tipo:'Transp. 50mic',color:'#3B82F6',metros:100,hora:'10:55',comentario:''},
-  ].forEach((d,i)=>cortes.push({id:Date.now()+i,op:'Juan P.',...d,fecha:hoy}));
-  errores.push({id:Date.now()+10,op:'Juan P.',tipo:'Falla de máquina',icon:'⚙️',desc:'La máquina 2 hace ruido al cortar.',zonas:['Máquina 2'],hora:'09:10',fecha:hoy});
+  ].forEach((d,i)=>cortes.push({id:Date.now()+i,op:'Juan P.',...d,fecha:hoy,_src:'local'}));
+  errores.push({id:Date.now()+10,op:'Juan P.',tipo:'Falla de máquina',icon:'⚙️',desc:'La máquina 2 hace ruido al cortar.',zonas:['Máquina 2'],hora:'09:10',fecha:hoy,_src:'local'});
+  saveLocal();
   entrar();
+}
+
+// SESIÓN
+function cerrarSesion(){
+  op='';localStorage.removeItem('filmop');
+  go('s-login');
+  document.getElementById('lg-sel').value='';
+  document.getElementById('lg-btn').disabled=true;
+}
+function limpiarTodo(){
+  if(!confirm('¿Borrar TODOS los cortes, errores y datos locales? Esta acción no se puede deshacer.'))return;
+  cortes=[];errores=[];syncQueue=[];op='';lastCorte=null;
+  localStorage.removeItem('filmcortes');localStorage.removeItem('filmerrores');
+  localStorage.removeItem('filmop');localStorage.removeItem('filmsyncq');
+  go('s-login');
+  document.getElementById('lg-sel').value='';
+  document.getElementById('lg-btn').disabled=true;
 }
 </script>
 </body>
