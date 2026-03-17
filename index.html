@@ -226,6 +226,25 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111}
 .sdot.busy{background:#F59E0B;animation:sb 1s infinite}
 @keyframes sb{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
+
+<script>
+// Bloquear pinch zoom
+document.addEventListener('touchstart', function(e){
+  if(e.touches.length > 1) e.preventDefault();
+}, {passive: false});
+
+document.addEventListener('touchmove', function(e){
+  if(e.touches.length > 1) e.preventDefault();
+}, {passive: false});
+
+document.addEventListener('gesturestart', function(e){
+  e.preventDefault();
+}, {passive: false});
+
+document.addEventListener('gesturechange', function(e){
+  e.preventDefault();
+}, {passive: false});
+</script>
 </head>
 <body>
 <div class="app">
