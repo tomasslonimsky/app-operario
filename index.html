@@ -39,10 +39,10 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111}
 .shell-content{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 
 /* BOTTOM NAV */
-.bottom-nav{background:white;border-top:1.5px solid #EBEBEB;display:flex;padding:10px 0 env(safe-area-inset-bottom,16px);flex-shrink:0;}
-.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:6px 0}
-.bnav-lbl{font-size:11px;font-weight:700;color:#BBB;letter-spacing:.02em}
-.bnav-item.on .bnav-lbl{color:#111}
+.bottom-nav{background:white;border-top:1.5px solid #E0E0E0;display:flex;padding:12px 0 env(safe-area-inset-bottom,20px);flex-shrink:0;box-shadow:0 -2px 12px rgba(0,0,0,.06)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 0}
+.bnav-lbl{font-size:12px;font-weight:700;color:#BBB;letter-spacing:.02em}
+.bnav-item.on .bnav-lbl{color:#111;font-size:12px}
 .bnav-item.on.err .bnav-lbl{color:#EF4444}
 
 /* PANES */
@@ -55,11 +55,11 @@ body{font-family:'Inter',sans-serif;background:#F5F5F7;color:#111}
 .card{background:white;border-radius:16px;border:1px solid #EBEBEB;padding:16px}
 
 /* DASHBOARD */
-.hero{background:#111;border-radius:16px;padding:16px;color:white;position:relative;overflow:hidden}
+.hero{background:#111;border-radius:16px;padding:16px 16px 18px;color:white;position:relative;overflow:visible}
 .hero::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)}
 .hero-lbl{font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:4px}
-.hero-val{font-size:52px;font-weight:800;color:white;line-height:1;letter-spacing:-2px}
-.hero-unit{font-size:24px;font-weight:500;color:rgba(255,255,255,.4);margin-left:4px}
+.hero-val{font-size:38px;font-weight:800;color:white;line-height:1.1;letter-spacing:-1px}
+.hero-unit{font-size:20px;font-weight:500;color:rgba(255,255,255,.4);margin-left:3px}
 .hero-sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px}
 .hero-bar-bg{height:3px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:10px;overflow:hidden}
 .hero-bar-fill{height:100%;background:white;border-radius:99px;transition:width .6s}
@@ -286,14 +286,14 @@ document.addEventListener('gesturechange', function(e){
     <div class="pane on" id="pane-dash">
       <div class="scroll">
         <div class="hero">
-          <div class="hero-lbl">METROS RESTANTES HOY</div>
-          <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:nowrap"><span class="hero-val" id="d-rest">500</span><span class="hero-unit">m</span></div>
-          <div class="hero-sub" id="d-sub">Meta: 500 m — empezá tu primer corte</div>
+          <div class="hero-lbl">STOCK TOTAL DISPONIBLE</div>
+          <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:nowrap"><span class="hero-val" id="d-rest">—</span><span class="hero-unit">m</span></div>
+          <div class="hero-sub" id="d-sub">Cargando stock...</div>
           <div class="hero-bar-bg"><div class="hero-bar-fill" id="d-fill" style="width:0%"></div></div>
         </div>
         <div class="m2">
-          <div class="mc"><div class="mc-lbl">METROS HOY</div><div><span class="mc-val" id="d-tot">0</span><span class="mc-unit"> m</span></div><div class="mc-sub" id="d-pct">0% de la meta</div></div>
-          <div class="mc"><div class="mc-lbl">CORTES</div><div class="mc-val" id="d-cor">0</div><div id="d-cor-b" class="badge bgr" style="margin-top:6px">Sin cortes aún</div></div>
+          <div class="mc"><div class="mc-lbl">METROS USADOS HOY</div><div><span class="mc-val" id="d-tot">0</span><span class="mc-unit"> m</span></div><div class="mc-sub" id="d-pct">del turno de hoy</div></div>
+          <div class="mc"><div class="mc-lbl">CORTES HOY</div><div class="mc-val" id="d-cor">0</div><div id="d-cor-b" class="badge bgr" style="margin-top:6px">Sin cortes aún</div></div>
           <div class="mc"><div class="mc-lbl">PROMEDIO</div><div><span class="mc-val" id="d-prom">—</span><span class="mc-unit" id="d-prom-u"></span></div><div class="mc-sub">por corte</div></div>
           <div class="mc"><div class="mc-lbl">REPORTES HOY</div><div class="mc-val" id="d-errs" style="color:#EF4444">0</div><div id="d-err-b" class="badge bgr" style="margin-top:6px">Sin errores</div></div>
         </div>
@@ -457,7 +457,15 @@ const ERR_TIPOS=[
   {id:'e6',icon:'🔧',name:'Otro problema',sub:'Cualquier otro inconveniente'},
 ];
 const ZONAS=['Máquina 1','Máquina 2','Máquina 3','Zona A','Zona B','Depósito'];
-const META=500;
+const META=500; // legacy, no usado
+const STOCK_INICIAL={
+  't1': 300,  // Transp. 50mic
+  't2': 200,  // Transp. 80mic
+  't3': 150,  // Negro 50mic
+  't4': 250,  // Negro 80mic
+  't5': 180,  // Stretch man.
+  't6': 160,  // Stretch maq.
+};
 let op='',tid=null,ms='',etid=null,ezonas=[],cortes=[],errores=[];
 
 function initLogin(){
@@ -531,7 +539,7 @@ function setSyncUI(st,msg){document.getElementById('sdot').className='sdot'+(st?
 
 function regCorte(){
   const t=TIPOS.find(x=>x.id===tid),now=new Date();
-  const r={id:Date.now(),op,tipo:t.name,color:t.color,metros:getM(),comentario:document.getElementById('c-comment').value.trim(),hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),fecha:now.toLocaleDateString('es-AR')};
+  const r={id:Date.now(),op,tipoId:tid,tipo:t.name,color:t.color,metros:getM(),comentario:document.getElementById('c-comment').value.trim(),hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),fecha:now.toLocaleDateString('es-AR')};
   cortes.push(r);
   _shPost({sheet:'Cortes',action:'append',headers:['Fecha','Hora','Operario','Tipo','Metros','Comentario'],row:[r.fecha,r.hora,r.op,r.tipo,r.metros,r.comentario]});
   const hr=cortes.filter(x=>x.op===op&&x.fecha===r.fecha),tot=hr.reduce((s,x)=>s+x.metros,0);
@@ -556,26 +564,40 @@ function regError(){
 }
 function nuevoError(){etid=null;ezonas=[];document.querySelectorAll('.et-card').forEach(c=>{c.classList.remove('on');c.querySelector('.ck').style.display='none';});document.querySelectorAll('#e-zonas .tag').forEach(b=>b.classList.remove('on'));document.getElementById('e-desc').value='';document.getElementById('e-count').textContent='0 / 300';document.getElementById('err-btn').disabled=true;go('s-shell');goPane('error');}
 function irDash(){updDash();go('s-shell');goPane('dash');}
+function getStockRestante(tipoId){
+  const inicial=STOCK_INICIAL[tipoId]||0;
+  const usado=cortes.filter(r=>r.tipoId===tipoId).reduce((s,r)=>s+r.metros,0);
+  return Math.max(0, inicial-usado);
+}
 function updDash(){
   const hoy=new Date().toLocaleDateString('es-AR');
   const hc=cortes.filter(r=>r.op===op&&r.fecha===hoy);
   const he=errores.filter(r=>r.op===op&&r.fecha===hoy);
   const tot=hc.reduce((s,r)=>s+r.metros,0),cor=hc.length;
-  const rest=Math.max(0,META-tot),pct=Math.min(100,Math.round(tot/META*100));
   const prom=cor?Math.round(tot/cor):0;
-  document.getElementById('d-rest').textContent=rest;
-  document.getElementById('d-fill').style.width=pct+'%';
-  document.getElementById('d-sub').textContent=rest===0?'Meta alcanzada! Excelente trabajo':(tot>0?`Meta: ${META} m — faltan ${rest} m`:`Meta: ${META} m — empezá tu primer corte`);
+  // Stock total = suma de todos los stocks restantes
+  const stockTotal=TIPOS.reduce((s,t)=>s+getStockRestante(t.id),0);
+  const stockInicial=Object.values(STOCK_INICIAL).reduce((a,b)=>a+b,0);
+  const pctUsado=stockInicial>0?Math.min(100,Math.round((stockInicial-stockTotal)/stockInicial*100)):0;
+  document.getElementById('d-rest').textContent=stockTotal;
+  document.getElementById('d-fill').style.width=(100-pctUsado)+'%';
+  document.getElementById('d-sub').textContent=`${stockTotal} m disponibles de ${stockInicial} m totales`;
   document.getElementById('d-tot').textContent=tot;
-  document.getElementById('d-pct').textContent=pct+'% de la meta';
+  document.getElementById('d-pct').textContent='del turno de hoy';
   document.getElementById('d-cor').textContent=cor;
   const cb=document.getElementById('d-cor-b');cb.className='badge '+(cor===0?'bgr':cor<3?'by':cor<6?'bb':'bg');cb.textContent=cor===0?'Sin cortes aún':cor<3?'Empezando bien':cor<6?'Buen ritmo':'Excelente!';
   document.getElementById('d-prom').textContent=prom||'—';document.getElementById('d-prom-u').textContent=prom?' m':'';
   document.getElementById('d-errs').textContent=he.length;
   const eb=document.getElementById('d-err-b');eb.className='badge '+(he.length===0?'bg':he.length<3?'by':'br');eb.textContent=he.length===0?'Sin errores':he.length<3?'Revisar':'Atención!';
   const tb=document.getElementById('d-barras');
-  if(!cor){tb.innerHTML='<div class="empty">Sin registros aún</div>';}
-  else{const bt={};hc.forEach(r=>{bt[r.tipo]=bt[r.tipo]||{m:0,c:r.color};bt[r.tipo].m+=r.metros;});const sorted=Object.entries(bt).sort((a,b)=>b[1].m-a[1].m),mx=sorted[0][1].m;tb.innerHTML=sorted.map(([n,d])=>`<div class="tb-row"><span class="tb-name">${n}</span><div class="tb-track"><div class="tb-fill" style="width:${Math.round(d.m/mx*100)}%;background:${d.c}"></div></div><span class="tb-val">${d.m} m</span></div>`).join('');}
+  const stockRows=TIPOS.map(t=>({name:t.name,color:t.color,id:t.id,restante:getStockRestante(t.id),inicial:STOCK_INICIAL[t.id]||0}));
+  const maxStock=Math.max(...stockRows.map(r=>r.inicial),1);
+  tb.innerHTML=stockRows.map(r=>{
+    const pct=Math.round(r.restante/r.inicial*100)||0;
+    const barColor=pct>50?r.color:pct>20?'#F59E0B':'#EF4444';
+    const badge=pct<=20?'<span style="font-size:10px;background:#FEE2E2;color:#B91C1C;border-radius:99px;padding:2px 7px;margin-left:6px;font-weight:700">BAJO</span>':'';
+    return `<div class="tb-row"><span class="tb-name">${r.name}</span><div class="tb-track"><div class="tb-fill" style="width:${Math.round(r.restante/maxStock*100)}%;background:${barColor}"></div></div><span class="tb-val">${r.restante} m${badge}</span></div>`;
+  }).join('');
   const allAct=[...hc.map(r=>({...r,kind:'corte'})),...he.map(r=>({...r,kind:'error'}))].sort((a,b)=>b.id-a.id).slice(0,5);
   const act=document.getElementById('d-act');
   if(!allAct.length){act.innerHTML='<div class="empty">Sin actividad aún</div>';}
@@ -608,12 +630,12 @@ function cargarDemo(){
   const _s=document.getElementById('op-select');if(_s){_s.value='Juan P.';}
   const hoy = new Date().toLocaleDateString('es-AR');
   const demos = [
-    {tipo:'Transp. 50mic',color:'#3B82F6',metros:120,hora:'07:15',comentario:''},
-    {tipo:'Negro 80mic',color:'#374151',metros:80,hora:'08:42',comentario:'Rollo defectuoso'},
-    {tipo:'Stretch man.',color:'#F59E0B',metros:150,hora:'09:30',comentario:''},
-    {tipo:'Transp. 50mic',color:'#3B82F6',metros:100,hora:'10:55',comentario:''},
+    {tipoId:'t1',tipo:'Transp. 50mic',color:'#3B82F6',metros:120,hora:'07:15',comentario:''},
+    {tipoId:'t4',tipo:'Negro 80mic',color:'#374151',metros:80,hora:'08:42',comentario:'Rollo defectuoso'},
+    {tipoId:'t5',tipo:'Stretch man.',color:'#F59E0B',metros:150,hora:'09:30',comentario:''},
+    {tipoId:'t1',tipo:'Transp. 50mic',color:'#3B82F6',metros:100,hora:'10:55',comentario:''},
   ];
-  demos.forEach((d,i)=>cortes.push({id:Date.now()+i,op:'Juan P.',tipo:d.tipo,color:d.color,metros:d.metros,comentario:d.comentario,hora:d.hora,fecha:hoy}));
+  demos.forEach((d,i)=>cortes.push({id:Date.now()+i,op:'Juan P.',tipoId:d.tipoId,tipo:d.tipo,color:d.color,metros:d.metros,comentario:d.comentario,hora:d.hora,fecha:hoy}));
   errores.push({id:Date.now()+10,op:'Juan P.',tipo:'Falla de máquina',icon:'⚙️',desc:'La máquina 2 hace ruido raro al cortar, puede ser la cuchilla.',zonas:['Máquina 2'],hora:'09:10',fecha:hoy});
   document.getElementById('hdr-name').textContent='Juan P.';
   document.getElementById('hdr-av').textContent='JP';
