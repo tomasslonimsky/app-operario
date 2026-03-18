@@ -85,7 +85,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 .hero::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.04)}
 .hero-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:5px;text-transform:uppercase}
 .hero-row{display:flex;align-items:baseline;gap:5px}
-.hero-n{font-size:22px;font-weight:800;color:#fff;line-height:1;letter-spacing:-1px}
+.hero-n{font-size:clamp(32px,9vw,42px);font-weight:800;color:#fff;line-height:1;letter-spacing:-1px}
 .hero-u{font-size:14px;font-weight:500;color:rgba(255,255,255,.45)}
 .hero-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}
 .hero-bar{height:3px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:8px;overflow:hidden}
@@ -635,10 +635,11 @@ window.addEventListener('beforeunload',function(e){
   setSyncUI(shCfg.url?(syncQueue.length>0?'busy':'ok'):'',shCfg.url?(syncQueue.length>0?syncQueue.length+' pendiente(s) — reintentando...':'Conectado a Google Sheets ✓'):'Sin Google Sheets — tocar ⚙');
   document.querySelectorAll('.pane').forEach(p=>{if(!p.classList.contains('on'))p.style.display='none';});
 
-  // Auto-login si ya hay operario guardado
+  // Auto-login desactivado en versión de prueba
+  // Siempre muestra la pantalla de login
   if(op){
     document.getElementById('lg-sel').value=op;
-    entrar();
+    document.getElementById('lg-btn').disabled=false;
   }
 })();
 
